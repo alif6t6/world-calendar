@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WORLD Calendar</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* Reset & body */
+body { margin:0; font-family:'Inter',sans-serif; overflow-x:hidden; display:flex; flex-direction:column; align-items:center; min-height:100vh; padding:20px; background:#0f2027; transition:0.5s; color:#fff; }
+body.light { background:#f0f0f0; color:#203a43; }
+
+/* Header */
+#header { width:100%; max-width:600px; background:rgba(255,255,255,0.1); backdrop-filter:blur(10px); border-radius:15px; padding:20px; text-align:center; position:relative; display:flex; flex-direction:column; align-items:center; gap:10px; box-shadow:0 10px 25px rgba(0,0,0,0.7); transition:0.5s;}
+body.light #header { background: rgba(0,0,0,0.1); }
+#liveTime { font-size:2rem; font-weight:700; }
+#todayDay { font-size:1.2rem; }
+#sunInfo { font-size:1rem; }
+#darkModeToggle { margin-top:5px;padding:5px 5px;border:none;border-radius:15px;cursor:pointer;background:#ff6f61;color:#fff;font-weight:600; transition:0.3s;}
+#darkModeToggle:hover { transform:scale(1.05); }
+
+/* Language Buttons */
+#languageSelector { position:absolute; top:7px; right:7px; display:flex; gap:7px; }
+.langBtn { width:40px; height:40px; border-radius:50%; border:2px solid #fff; background:rgba(255,255,255,0.2); color:#fff; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:0.3s; }
+.langBtn:hover { background:#fff; color:#203a43; transform:scale(1.2); }
+.langBtn.active { background:#ff6f61; color:#fff; }
+body.light .langBtn { border:2px solid #203a43; background:rgba(0,0,0,0.2); color:#203a43; }
+body.light .langBtn:hover { background:#203a43; color:#fff; }
+body.light .langBtn.active { background:#ff6f61; color:#fff; }
+
+/* Calendar */
+.calendar { background: rgba(255,255,255,0.05); border-radius:20px; padding:30px; max-width:450px; width:90%; box-shadow:0 15px 50px rgba(0,0,0,0.5); backdrop-filter:blur(15px); transition:0.5s; transform-style:preserve-3d; }
+body.light .calendar { background: rgba(0,0,0,0.05); }
+.calendar:hover { transform:translateY(-8px) rotateX(2deg) rotateY(2deg); }
+.month { display:flex; justify-content:space-between; align-items:center; font-weight:600; font-size:1.3rem; margin-bottom:15px; }
+.month button { background:transparent; border:2px solid #fff; color:#fff; padding:5px 12px; border-radius:12px; cursor:pointer; font-weight:600; transition:0.3s; }
+.month button:hover { background:#ff6f61; color:#fff; transform:scale(1.1) rotate(-2deg); }
+body.light .month button { border:2px solid #203a43; color:#203a43; }
+body.light .month button:hover { background:#ff6f61; color:#fff; }
+
+.days, .dates { display:grid; grid-template-columns:repeat(7,1fr); text-align:center; }
+.days div { color:#f0f0f0; font-weight:600; padding-bottom:10px; }
+body.light .days div { color:#203a43; }
+.dates div { background: rgba(255,255,255,0.1); margin:4px; padding:15px 0; border-radius:15px; color:#fff; font-weight:500; cursor:pointer; position:relative; transition:0.3s, transform 0.3s; }
+body.light .dates div { background: rgba(0,0,0,0.1); color:#203a43; }
+.dates div:hover { background:#ff6f61; transform:translateY(-5px) scale(1.05); box-shadow:0 12px 25px rgba(0,0,0,0.4); color:#fff; }
+.today { background:#ff4757 !important; color:#fff; font-weight:700; box-shadow:0 0 60px #ff6f61; }
+
+/* Event Dot */
+.event-dot { width:10px; height:10px; border-radius:50%; position:absolute; bottom:8px; left:50%; transform:translateX(-50%); transition:0.3s; }
+
+/* Modal */
+.modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:none; justify-content:center; align-items:center; z-index:999; }
+.modal-content { background:#fff;color:#203a43; padding:20px; border-radius:20px; width:90%; max-width:400px; position:relative; transform:scale(0.8); transition:0.3s; }
+.modal.show { display:flex; }
+.modal-content.show { transform:scale(1); }
+.modal-content h3{ margin-top:0;}
+.modal-content label{ display:block; margin-top:10px;}
+.modal-content input, .modal-content textarea, .modal-content select{ width:100%; padding:8px; margin-top:4px; border-radius:5px; border:1px solid #ccc;}
+.modal-content button{ margin-top:15px; padding:10px 15px; border:none; border-radius:12px; cursor:pointer; background:#ff6f61; color:#fff; font-weight:600; transition:0.3s;}
+.modal-content button:hover{ transform:scale(1.05);}
+.modal-content .close{ position:absolute; top:10px; right:15px; font-size:20px; cursor:pointer; color:#333; }
+
+/* Toast */
+.toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#ff6f61; color:#fff; padding:12px 25px; border-radius:20px; font-weight:600; display:none; z-index:1000; box-shadow:0 5px 20px rgba(0,0,0,0.3); }
+
+/* Ad Container */
+.ad-container { margin: 20px auto; text-align: center; max-width: 728px; width: 100%; }
+.ad-banner { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 15px; margin: 10px 0; }
+.ad-label { font-size: 0.8rem; color: #888; margin-bottom: 5px; }
+.ad-placeholder { width: 100%; height: 90px; background: rgba(255,255,255,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #aaa; font-size: 0.9rem; }
+.ad-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 320px; background: rgba(255,255,255,0.95); border-radius: 15px; padding: 20px; box-shadow: 0 10px 50px rgba(0,0,0,0.5); z-index: 10000; display: none; border: 3px solid #ff6f61; }
+.ad-popup .close-ad { position: absolute; top: 10px; right: 15px; cursor: pointer; font-weight: bold; font-size: 24px; color: #ff0000; }
+.ad-popup .close-ad:hover { color: #000; }
+
+/* Floating bubbles/particles */
+.bubble { position:absolute; border-radius:50%; opacity:0.1; background:#fff; animation: float 12s linear infinite; pointer-events:none; }
+body.light .bubble { background:#000; opacity:0.05; }
+@keyframes float {0%{transform:translateY(0) scale(1);}50%{transform:translateY(-120px) scale(1.3);}100%{transform:translateY(0) scale(1);}}
+
+/* Responsive */
+@media(max-width:500px){ 
+  #languageSelector{top:5px; right:5px; gap:5px;} 
+  .month button{padding:5px 8px;} 
+  .calendar{padding:20px;} 
+  #notificationToggle { top:10px; right:10px; width:40px; height:40px; } 
+  .notification-panel { width:250px; right:10px; }
+  .ad-popup { width: 280px; }
+}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div id="languageSelector">
+    <div class="langBtn active" data-lang="bn">Bn</div>
+    <div class="langBtn" data-lang="en">En</div>
+    <div class="langBtn" data-lang="hi">Hi</div>
+  </div>
+  <div id="liveTime">--:--:-- --</div>
+  <div id="todayDay">Loading...</div>
+  <div id="sunInfo">Loading...</div>
+  <button id="darkModeToggle">Toggle Dark/Light</button>
+</div>
+
+<!-- Ad Container - Banner Ad 1 -->
+<div class="ad-container">
+  <div class="ad-banner">
+    <div class="ad-label">Advertisement</div>
+    <div class="ad-placeholder">
+      <script type="text/javascript">
+        atOptions = {
+          'key' : 'e939ba5d133870ad2e668b355f035c61',
+          'format' : 'iframe',
+          'height' : 50,
+          'width' : 320,
+          'params' : {}
+        };
+      </script>
+      <script type="text/javascript" src="//www.highperformanceformat.com/e939ba5d133870ad2e668b355f035c61/invoke.js"></script>
+    </div>
+  </div>
+</div>
+
+<!-- Ad Container - Banner Ad 2 -->
+<div class="ad-container">
+  <div class="ad-banner">
+    <div class="ad-label">Advertisement</div>
+    <div class="ad-placeholder">
+      <script type='text/javascript' src='//pl27773384.revenuecpmgate.com/e3/1a/57/e31a573d16246157f07a6f0ff3893571.js'></script>
+    </div>
+  </div>
+</div>
+
+<!-- Ad Container - Banner Ad 3 -->
+<div class="ad-container">
+  <div class="ad-banner">
+    <div class="ad-label">Advertisement</div>
+    <div class="ad-placeholder">
+      <script type='text/javascript' src='//pl27774015.revenuecpmgate.com/47/0d/e5/470de51d4a5c63e2630b0d74123d79be.js'></script>
+    </div>
+  </div>
+</div>
+
+<!-- Additional Banner Ad 4 -->
+<div class="ad-container">
+  <div class="ad-banner">
+    <div class="ad-label">Advertisement</div>
+    <div class="ad-placeholder">
+      <script type="text/javascript">
+        atOptions = {
+          'key' : 'e939ba5d133870ad2e668b355f035c61',
+          'format' : 'iframe',
+          'height' : 90,
+          'width' : 728,
+          'params' : {}
+        };
+      </script>
+      <script type="text/javascript" src="//www.highperformanceformat.com/e939ba5d133870ad2e668b355f035c61/invoke.js"></script>
+    </div>
+  </div>
+</div>
+
+<!-- Additional Banner Ad 5 -->
+<div class="ad-container">
+  <div class="ad-banner">
+    <div class="ad-label">Advertisement</div>
+    <div class="ad-placeholder">
+      <script type='text/javascript' src='//pl27773384.revenuecpmgate.com/e3/1a/57/e31a573d16246157f07a6f0ff3893571.js'></script>
+    </div>
+  </div>
+</div>
+
+<!-- Additional Banner Ad 6 -->
+<div class="ad-container">
+  <div class="ad-banner">
+    <div class="ad-label">Advertisement</div>
+    <div class="ad-placeholder">
+      <script type='text/javascript' src='//pl27774015.revenuecpmgate.com/47/0d/e5/470de51d4a5c63e2630b0d74123d79be.js'></script>
+    </div>
+  </div>
+</div>
+
+<!-- Additional Banner Ad 7 -->
+<div class="ad-container">
+  <div class="ad-banner">
+    <div class="ad-label">Advertisement</div>
+    <div class="ad-placeholder">
+      <script async="async" data-cfasync="false" src="//pl27722593.revenuecpmgate.com/cd82a28c8f788bb689e91cec441c17c8/invoke.js"></script>
+      <div id="container-cd82a28c8f788bb689e91cec441c17c8"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Additional Banner Ad 8 -->
+<div class="ad-container">
+  <div class="ad-banner">
+    <div class="ad-label">Advertisement</div>
+    <div class="ad-placeholder">
+      <script type="text/javascript">
+        atOptions = {
+          'key' : 'another-key-here', // Replace with valid key if available
+          'format' : 'iframe',
+          'height' : 50,
+          'width' : 320,
+          'params' : {}
+        };
+      </script>
+      <script type="text/javascript" src="//www.highperformanceformat.com/e939ba5d133870ad2e668b355f035c61/invoke.js"></script>
+    </div>
+  </div>
+</div>
+
+<div class="calendar" id="calendar">
+  <div class="month">
+    <button id="prev">&#10094;</button>
+    <div id="monthYear"></div>
+    <button id="next">&#10095;</button>
+  </div>
+  <div class="days" id="weekdays"></div>
+  <div class="dates" id="dates"></div>
+</div>
+
+<!-- Popup Ad 1 -->
+<div class="ad-popup" id="popupAd1">
+  <span class="close-ad" onclick="closePopupAd('popupAd1')">&times;</span>
+  <div class="ad-label">Sponsored Content</div>
+  <div style="height: 250px; display: flex; align-items: center; justify-content: center; background: #f5f5f5; border-radius: 10px; margin: 10px 0;">
+    <script async="async" data-cfasync="false" src="//pl27722593.revenuecpmgate.com/cd82a28c8f788bb689e91cec441c17c8/invoke.js"></script>
+    <div id="container-cd82a28c8f788bb689e91cec441c17c8"></div>
+  </div>
+  <div style="text-align: center; font-size: 12px; color: #666;">Close this ad to continue</div>
+</div>
+
+<!-- Popup Ad 2 -->
+<div class="ad-popup" id="popupAd2">
+  <span class="close-ad" onclick="closePopupAd('popupAd2')">&times;</span>
+  <div class="ad-label">Special Offer</div>
+  <div style="height: 200px; display: flex; align-items: center; justify-content: center; background: #f5f5f5; border-radius: 10px; margin: 10px 0;">
+    <script type='text/javascript' src='//pl27774015.revenuecpmgate.com/47/0d/e5/470de51d4a5c63e2630b0d74123d79be.js'></script>
+  </div>
+  <div style="text-align: center; font-size: 12px; color: #666;">Don't miss this opportunity!</div>
+</div>
+
+<!-- Popup Ad 3 -->
+<div class="ad-popup" id="popupAd3">
+  <span class="close-ad" onclick="closePopupAd('popupAd3')">&times;</span>
+  <div class="ad-label">Recommended For You</div>
+  <div style="height: 180px; display: flex; align-items: center; justify-content: center; background: #f5f5f5; border-radius: 10px; margin: 10px 0;">
+    <script type='text/javascript' src='//pl27773384.revenuecpmgate.com/e3/1a/57/e31a573d16246157f07a6f0ff3893571.js'></script>
+  </div>
+  <div style="text-align: center; font-size: 12px; color: #666;">Limited time offer!</div>
+</div>
+
+<!-- Additional Popup Ad 4 -->
+<div class="ad-popup" id="popupAd4">
+  <span class="close-ad" onclick="closePopupAd('popupAd4')">&times;</span>
+  <div class="ad-label">Exclusive Deal</div>
+  <div style="height: 250px; display: flex; align-items: center; justify-content: center; background: #f5f5f5; border-radius: 10px; margin: 10px 0;">
+    <script type="text/javascript">
+      atOptions = {
+        'key' : 'e939ba5d133870ad2e668b355f035c61',
+        'format' : 'iframe',
+        'height' : 250,
+        'width' : 300,
+        'params' : {}
+      };
+    </script>
+    <script type="text/javascript" src="//www.highperformanceformat.com/e939ba5d133870ad2e668b355f035c61/invoke.js"></script>
+  </div>
+  <div style="text-align: center; font-size: 12px; color: #666;">Grab it now!</div>
+</div>
+
+<!-- Additional Popup Ad 5 -->
+<div class="ad-popup" id="popupAd5">
+  <span class="close-ad" onclick="closePopupAd('popupAd5')">&times;</span>
+  <div class="ad-label">Hot Offer</div>
+  <div style="height: 200px; display: flex; align-items: center; justify-content: center; background: #f5f5f5; border-radius: 10px; margin: 10px 0;">
+    <script type='text/javascript' src='//pl27773384.revenuecpmgate.com/e3/1a/57/e31a573d16246157f07a6f0ff3893571.js'></script>
+  </div>
+  <div style="text-align: center; font-size: 12px; color: #666;">Limited stock!</div>
+</div>
+
+<!-- Additional Popup Ad 6 -->
+<div class="ad-popup" id="popupAd6">
+  <span class="close-ad" onclick="closePopupAd('popupAd6')">&times;</span>
+  <div class="ad-label">Premium Content</div>
+  <div style="height: 180px; display: flex; align-items: center; justify-content: center; background: #f5f5f5; border-radius: 10px; margin: 10px 0;">
+    <script async="async" data-cfasync="false" src="//pl27722593.revenuecpmgate.com/cd82a28c8f788bb689e91cec441c17c8/invoke.js"></script>
+    <div id="container-cd82a28c8f788bb689e91cec441c17c8"></div>
+  </div>
+  <div style="text-align: center; font-size: 12px; color: #666;">Check it out!</div>
+</div>
+
+<!-- Additional Hidden Ads -->
+<div style="display: none;">
+  <!-- Hidden Ad 1 -->
+  <script type='text/javascript' src='//pl27774015.revenuecpmgate.com/47/0d/e5/470de51d4a5c63e2630b0d74123d79be.js'></script>
+  
+  <!-- Hidden Ad 2 -->
+  <script type='text/javascript' src='//pl27773384.revenuecpmgate.com/e3/1a/57/e31a573d16246157f07a6f0ff3893571.js'></script>
+  
+  <!-- Hidden Ad 3 -->
+  <script type="text/javascript">
+    atOptions = {
+      'key' : 'e939ba5d133870ad2e668b355f035c61',
+      'format' : 'iframe',
+      'height' : 50,
+      'width' : 320,
+      'params' : {}
+    };
+  </script>
+  <script type="text/javascript" src="//www.highperformanceformat.com/e939ba5d133870ad2e668b355f035c61/invoke.js"></script>
+
+  <!-- Additional Hidden Ad 4 -->
+  <script type='text/javascript' src='//pl27774015.revenuecpmgate.com/47/0d/e5/470de51d4a5c63e2630b0d74123d79be.js'></script>
+
+  <!-- Additional Hidden Ad 5 -->
+  <script type='text/javascript' src='//pl27773384.revenuecpmgate.com/e3/1a/57/e31a573d16246157f07a6f0ff3893571.js'></script>
+
+  <!-- Additional Hidden Ad 6 -->
+  <script type="text/javascript">
+    atOptions = {
+      'key' : 'e939ba5d133870ad2e668b355f035c61',
+      'format' : 'iframe',
+      'height' : 90,
+      'width' : 728,
+      'params' : {}
+    };
+  </script>
+  <script type="text/javascript" src="//www.highperformanceformat.com/e939ba5d133870ad2e668b355f035c61/invoke.js"></script>
+</div>
+
+<button id="notificationToggle"></button>
+<div class="notification-panel" id="notificationPanel">
+  <h3 id="notificationTitle">Notifications</h3>
+  <div id="notificationList"></div>
+</div>
+
+<div class="modal" id="eventModal">
+  <div class="modal-content" id="modalContent">
+    <span class="close" id="closeModal">&times;</span>
+    <h3 id="modalTitle">Create / Edit Event</h3>
+    <label id="lblTitle">Title</label><input type="text" id="eventTitle">
+    <label id="lblDate">Date</label><input type="date" id="eventDate">
+    <label id="lblTime">Time</label><input type="time" id="eventTime">
+    <label id="lblCategory">Category / Color</label>
+    <select id="eventCategory">
+      <option value="red">Red</option>
+      <option value="blue">Blue</option>
+      <option value="green">Green</option>
+      <option value="orange">Orange</option>
+    </select>
+    <label id="lblReminder">Reminder</label>
+    <select id="eventReminder">
+      <option value="none">No Reminder</option>
+      <option value="5min">5 minutes before</option>
+      <option value="15min">15 minutes before</option>
+      <option value="30min">30 minutes before</option>
+      <option value="1hour">1 hour before</option>
+      <option value="1day">1 day before</option>
+    </select>
+    <label id="lblDesc">Description / Link</label><textarea id="eventDesc"></textarea>
+    <button id="saveEvent">Save Event</button>
+    <button id="deleteEvent">Delete Event</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">Event saved successfully!</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
+<script>
+// Bubbles
+for(let i=0;i<25;i++){
+  let b=document.createElement('div'); b.classList.add('bubble');
+  let s=Math.random()*20+10; b.style.width=b.style.height=s+'px';
+  b.style.left=Math.random()*100+'%'; b.style.top=Math.random()*100+'%';
+  b.style.animationDuration=(8+Math.random()*12)+'s'; b.style.background=`rgba(255,255,255,${Math.random()*0.2})`;
+  document.body.appendChild(b);
+}
+
+// Adsterra Ad Code Integration - FIXED AND OPTIMIZED
+let adTimers = [];
+let currentAdIndex = 0;
+
+function loadAdsterraAds() {
+  console.log('Loading Adsterra Ads...');
+  
+  // Clear any existing timers
+  adTimers.forEach(timer => clearTimeout(timer));
+  adTimers = [];
+  
+  // Show first popup ad after 3 seconds
+  adTimers.push(setTimeout(() => {
+    showPopupAd('popupAd1');
+  }, 3000));
+  
+  // Show second popup ad after 8 seconds
+  adTimers.push(setTimeout(() => {
+    showPopupAd('popupAd2');
+  }, 8000));
+  
+  // Show third popup ad after 15 seconds
+  adTimers.push(setTimeout(() => {
+    showPopupAd('popupAd3');
+  }, 15000));
+
+  // Show fourth popup ad after 20 seconds
+  adTimers.push(setTimeout(() => {
+    showPopupAd('popupAd4');
+  }, 20000));
+
+  // Show fifth popup ad after 25 seconds
+  adTimers.push(setTimeout(() => {
+    showPopupAd('popupAd5');
+  }, 25000));
+
+  // Show sixth popup ad after 30 seconds
+  adTimers.push(setTimeout(() => {
+    showPopupAd('popupAd6');
+  }, 30000));
+  
+  // Continuous popup ads every 25-35 seconds
+  adTimers.push(setInterval(() => {
+    const popups = ['popupAd1', 'popupAd2', 'popupAd3', 'popupAd4', 'popupAd5', 'popupAd6'];
+    const randomPopup = popups[Math.floor(Math.random() * popups.length)];
+    showPopupAd(randomPopup);
+  }, 25000 + Math.random() * 10000));
+  
+  // Force load hidden ads
+  setTimeout(loadHiddenAds, 2000);
+}
+
+function loadHiddenAds() {
+  console.log('Loading hidden ads...');
+  // This will trigger the hidden ad scripts
+  const hiddenDivs = document.querySelectorAll('div[style*="display: none"]');
+  hiddenDivs.forEach(div => {
+    const scripts = div.getElementsByTagName('script');
+    for (let script of scripts) {
+      if (script.src) {
+        const newScript = document.createElement('script');
+        newScript.src = script.src;
+        newScript.async = true;
+        document.head.appendChild(newScript);
+      }
+    }
+  });
+}
+
+function showPopupAd(popupId) {
+  try {
+    const popup = document.getElementById(popupId);
+    if (popup) {
+      // Close any other open popups first
+      closeAllPopupAds();
+      
+      // Show the popup
+      popup.style.display = 'block';
+      document.body.style.overflow = 'hidden';
+      
+      console.log('Showing popup:', popupId);
+      
+      // Auto close after 20 seconds
+      const autoCloseTimer = setTimeout(() => {
+        closePopupAd(popupId);
+      }, 20000);
+      
+      // Store timer for cleanup
+      adTimers.push(autoCloseTimer);
+    }
+  } catch (error) {
+    console.log('Error showing popup:', error);
+  }
+}
+
+function closePopupAd(popupId) {
+  const popup = document.getElementById(popupId);
+  if (popup) {
+    popup.style.display = 'none';
+    document.body.style.overflow = 'auto';
+    console.log('Closed popup:', popupId);
+  }
+}
+
+function closeAllPopupAds() {
+  const popups = document.querySelectorAll('.ad-popup');
+  popups.forEach(popup => {
+    popup.style.display = 'none';
+  });
+  document.body.style.overflow = 'auto';
+}
+
+// Enhanced ad triggering system
+function initializeAdSystem() {
+  // Show ads on page load
+  window.addEventListener('load', () => {
+    setTimeout(loadAdsterraAds, 1000);
+  });
+
+  // Show ads on user interactions
+  document.addEventListener('click', (e) => {
+    // Don't trigger on ad close buttons
+    if (!e.target.classList.contains('close-ad')) {
+      setTimeout(() => {
+        const popups = ['popupAd1', 'popupAd2', 'popupAd3', 'popupAd4', 'popupAd5', 'popupAd6'];
+        const randomPopup = popups[Math.floor(Math.random() * popups.length)];
+        if (Math.random() > 0.7) { // 30% chance on click
+          showPopupAd(randomPopup);
+        }
+      }, 1000);
+    }
+  });
+
+  // Show ads on scroll
+  let lastScrollTime = 0;
+  window.addEventListener('scroll', () => {
+    const currentTime = new Date().getTime();
+    if (currentTime - lastScrollTime > 5000) { // Every 5 seconds of scrolling
+      const popups = ['popupAd1', 'popupAd2', 'popupAd3', 'popupAd4', 'popupAd5', 'popupAd6'];
+      const randomPopup = popups[Math.floor(Math.random() * popups.length)];
+      if (Math.random() > 0.8) { // 20% chance on scroll
+        showPopupAd(randomPopup);
+      }
+      lastScrollTime = currentTime;
+    }
+  });
+
+  // Show ads on mouse movement
+  let lastMouseMoveTime = 0;
+  document.addEventListener('mousemove', (e) => {
+    const currentTime = new Date().getTime();
+    if (currentTime - lastMouseMoveTime > 10000) { // Every 10 seconds
+      if (e.clientY < 100) { // If mouse near top
+        const popups = ['popupAd1', 'popupAd2', 'popupAd3', 'popupAd4', 'popupAd5', 'popupAd6'];
+        const randomPopup = popups[Math.floor(Math.random() * popups.length)];
+        showPopupAd(randomPopup);
+      }
+      lastMouseMoveTime = currentTime;
+    }
+  });
+}
+
+// Initialize ad system
+initializeAdSystem();
+
+// Translations (Fixed Bengali and Hindi translations)
+const trans = {
+  en: {
+    createEdit: "Create / Edit Event",
+    title: "Title",
+    date: "Date",
+    time: "Time",
+    category: "Category / Color",
+    reminder: "Reminder",
+    desc: "Description / Link",
+    save: "Save Event",
+    deleteBtn: "Delete Event",
+    toast: "Event saved successfully!",
+    deleted: "Event deleted successfully!",
+    toggle: "Toggle Dark/Light",
+    sunrise: "Sunrise",
+    sunset: "Sunset",
+    aj: "Today",
+    required: "Title is required!",
+    notifications: "Notifications",
+    noNotifications: "No upcoming events",
+    upcomingEvents: "Upcoming Events",
+    todayEvents: "Today's Events"
+  },
+  bn: {
+    createEdit: "ইভেন্ট তৈরি / সম্পাদনা",
+    title: "শিরোনাম",
+    date: "তারিখ",
+    time: "সময়",
+    category: "ক্যাটাগরি / রং",
+    reminder: "রিমাইন্ডার",
+    desc: "বর্ণনা / লিংক",
+    save: "ইভেন্ট সংরক্ষণ করুন",
+    deleteBtn: "ইভেন্ট মুছে ফেলুন",
+    toast: "ইভেন্ট সফলভাবে সংরক্ষিত!",
+    deleted: "ইভেন্ট মুছে ফেলা হয়েছে!",
+    toggle: "ডার্ক/লাইট টগল",
+    sunrise: "সূর্যোদয়",
+    sunset: "সূর্যাস্ত",
+    aj: "আজ",
+    required: "শিরোনাম প্রয়োজন!",
+    notifications: "নোটিফিকেশন",
+    noNotifications: "কোনো আসন্ন ইভেন্ট নেই",
+    upcomingEvents: "আসন্ন ইভেন্টসমূহ",
+    todayEvents: "আজকের ইভেন্টসমূহ"
+  },
+  hi: {
+    createEdit: "इवेंट बनाएं / संपादित करें",
+    title: "शीर्षक",
+    date: "तारीख",
+    time: "समय",
+    category: "श्रेणी / रंग",
+    reminder: "रिमाइंडर",
+    desc: "वर्णन / लिंक",
+    save: "इवेंट सहेजें",
+    deleteBtn: "इवेंट हटाएं",
+    toast: "इवेंट सफलतापूर्वक सहेजा गया!",
+    deleted: "इवेंट हटा दिया गया!",
+    toggle: "डार्क/लाइट टॉगल",
+    sunrise: "सूर्योदय",
+    sunset: "सूर्यास्त",
+    aj: "आज",
+    required: "शीर्षक आवश्यक है!",
+    notifications: "नोटिफिकेशन",
+    noNotifications: "कोई आगामी इवेंट नहीं",
+    upcomingEvents: "आगामी इवेंट",
+    todayEvents: "आज के इवेंट"
+  }
+};
+
+// Calendar logic
+let currentDate=new Date(), currentLang='bn', events=JSON.parse(localStorage.getItem('calendarEvents')||'[]');
+const months={ bn:["জানুয়ারী","ফেব্রুয়ারী","মার্চ","এপ্রিল","মে","জুন","জুলাই","আগস্ট","সেপ্টেম্বর","অক্টোবর","নভেম্বর","ডিসেম্বর"],
+               en:["January","February","March","April","May","June","July","August","September","October","November","December"],
+               hi:["जनवरी","फ़रवरी","मार्च","अप्रैल","मई","जून","जुलाई","अगस्त","सितंबर","अक्टूबर","नवंबर","दिसंबर"] };
+const weekdays={ bn:["রবি","সোম","মঙ্গল","বুধ","বৃহস্পতি","শুক্র","শনি"],
+                 en:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],
+                 hi:["रवि","सोम","मंगल","बुध","गुरु","शुक्र","शनि"] };
+const monthYear=document.getElementById("monthYear"), weekdaysEl=document.getElementById("weekdays"), datesEl=document.getElementById("dates");
+const prevBtn=document.getElementById("prev"), nextBtn=document.getElementById("next");
+
+function renderCalendar(){
+  const month=currentDate.getMonth(), year=currentDate.getFullYear();
+  monthYear.innerText=`${months[currentLang][month]} ${year}`;
+  weekdaysEl.innerHTML=''; weekdays[currentLang].forEach(d=>{let div=document.createElement('div'); div.innerText=d; weekdaysEl.appendChild(div);});
+  datesEl.innerHTML='';
+  const firstDay=new Date(year,month,1).getDay(), totalDays=new Date(year,month+1,0).getDate();
+  for(let i=0;i<firstDay;i++) datesEl.appendChild(document.createElement('div'));
+  for(let i=1;i<=totalDays;i++){
+    const d=document.createElement('div'); d.innerText=i;
+    const today=new Date();
+    if(i===today.getDate() && month===today.getMonth() && year===today.getFullYear()) d.classList.add('today');
+    
+    // Check for events on this date
+    const dateEvents = events.filter(e=>e.date===`${year}-${(month+1).toString().padStart(2,'0')}-${i.toString().padStart(2,'0')}`);
+    
+    dateEvents.forEach(ev=>{
+      // Event dot
+      let dot=document.createElement('span'); 
+      dot.classList.add('event-dot'); 
+      dot.style.background=ev.color; 
+      d.appendChild(dot);
+      
+      // Notification bell for events with reminders
+      if(ev.reminder && ev.reminder !== 'none') {
+        let bell=document.createElement('span'); 
+        bell.classList.add('notification-bell'); 
+        d.appendChild(bell);
+      }
+    });
+    
+    d.addEventListener('click',()=>openEventModal(`${year}-${(month+1).toString().padStart(2,'0')}-${i.toString().padStart(2,'0')}`));
+    datesEl.appendChild(d);
+  }
+  
+  // Update notifications
+  updateNotifications();
+}
+prevBtn.addEventListener('click',()=>{currentDate.setMonth(currentDate.getMonth()-1); renderCalendar();});
+nextBtn.addEventListener('click',()=>{currentDate.setMonth(currentDate.getMonth()+1); renderCalendar();});
+document.querySelectorAll('.langBtn').forEach(btn=>{btn.addEventListener('click',()=>{
+  document.querySelectorAll('.langBtn').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+  currentLang=btn.dataset.lang; renderCalendar(); updateTexts(); updateTime();
+})});
+
+// Update texts for language
+function updateTexts(){
+  document.getElementById('modalTitle').innerText = trans[currentLang].createEdit;
+  document.getElementById('lblTitle').innerText = trans[currentLang].title;
+  document.getElementById('lblDate').innerText = trans[currentLang].date;
+  document.getElementById('lblTime').innerText = trans[currentLang].time;
+  document.getElementById('lblCategory').innerText = trans[currentLang].category;
+  document.getElementById('lblReminder').innerText = trans[currentLang].reminder;
+  document.getElementById('lblDesc').innerText = trans[currentLang].desc;
+  document.getElementById('saveEvent').innerText = trans[currentLang].save;
+  document.getElementById('deleteEvent').innerText = trans[currentLang].deleteBtn;
+  document.getElementById('darkModeToggle').innerText = trans[currentLang].toggle;
+  document.getElementById('notificationTitle').innerText = trans[currentLang].notifications;
+}
+updateTexts();
+
+// Live time + GPS sunrise/sunset
+let sunTimes = SunCalc.getTimes(new Date(), 23.685, 90.3563); // Default to Dhaka
+if(navigator.geolocation){
+  navigator.geolocation.getCurrentPosition(pos=>{
+    sunTimes=SunCalc.getTimes(new Date(), pos.coords.latitude, pos.coords.longitude);
+    updateTime();
+  });
+}
+function updateTime(){
+  const timeEl=document.getElementById("liveTime"), todayEl=document.getElementById("todayDay"), sunEl=document.getElementById("sunInfo");
+  const now=new Date();
+  let hours=now.getHours(), minutes=now.getMinutes().toString().padStart(2,'0'), seconds=now.getSeconds().toString().padStart(2,'0'), ampm=hours>=12?'PM':'AM';
+  hours=hours%12; hours=hours?hours:12;
+  timeEl.innerText=`${hours.toString().padStart(2,'0')}:${minutes}:${seconds} ${ampm}`;
+  todayEl.innerText=`${trans[currentLang].aj}: ${weekdays[currentLang][now.getDay()]}`;
+  const formatTime=t=>{let h=t.getHours(); const m=t.getMinutes().toString().padStart(2,'0'); const am=h>=12?'PM':'AM'; h=h%12; h=h?h:12; return h.toString().padStart(2,'0')+':'+m+' '+am;};
+  sunEl.innerText=`${trans[currentLang].sunrise}: ${formatTime(sunTimes.sunrise)} | ${trans[currentLang].sunset}: ${formatTime(sunTimes.sunset)}`;
+  
+  // Check for notifications every minute
+  if(now.getSeconds() === 0) {
+    checkNotifications();
+  }
+}
+setInterval(updateTime,1000); updateTime();
+
+// Dark/light toggle
+document.getElementById('darkModeToggle').addEventListener('click',()=>{document.body.classList.toggle('light');});
+
+// Event Modal
+const modal=document.getElementById('eventModal'), closeModalBtn=document.getElementById('closeModal');
+const saveEventBtn=document.getElementById('saveEvent'), deleteEventBtn=document.getElementById('deleteEvent');
+const eventTitle=document.getElementById('eventTitle'), eventDate=document.getElementById('eventDate');
+const eventTime=document.getElementById('eventTime'), eventCategory=document.getElementById('eventCategory'), eventDesc=document.getElementById('eventDesc');
+const eventReminder=document.getElementById('eventReminder');
+const toast=document.getElementById('toast');
+let currentEventDate='';
+function openEventModal(date){
+  updateTexts();
+  currentEventDate=date;
+  eventDate.value=date;
+  const existing=events.find(e=>e.date===date);
+  if(existing){
+    eventTitle.value=existing.title;
+    eventTime.value=existing.time;
+    eventCategory.value=existing.color;
+    eventDesc.value=existing.desc;
+    eventReminder.value=existing.reminder || 'none';
+    deleteEventBtn.style.display='block';
+  } else {
+    eventTitle.value='';
+    eventTime.value='';
+    eventDesc.value='';
+    eventCategory.value='red';
+    eventReminder.value='none';
+    deleteEventBtn.style.display='none';
+  }
+  modal.style.display='flex';
+  document.getElementById('modalContent').classList.add('show');
+}
+closeModalBtn.onclick=()=>modal.style.display='none';
+window.onclick=e=>{if(e.target==modal) modal.style.display='none';};
+
+saveEventBtn.onclick=()=>{
+  const title = eventTitle.value.trim();
+  if(!title) {
+    alert(trans[currentLang].required);
+    return;
+  }
+  const newDate = eventDate.value;
+  if(newDate !== currentEventDate) {
+    events = events.filter(e => e.date !== currentEventDate);
+  }
+  events = events.filter(e => e.date !== newDate);
+  const ev={
+    date:newDate, 
+    title:eventTitle.value, 
+    time:eventTime.value, 
+    color:eventCategory.value, 
+    desc:eventDesc.value,
+    reminder: eventReminder.value
+  };
+  events.push(ev);
+  localStorage.setItem('calendarEvents', JSON.stringify(events));
+  modal.style.display='none'; 
+  renderCalendar();
+  toast.innerText = trans[currentLang].toast;
+  toast.style.display='block';
+  setTimeout(()=>{toast.style.display='none';},2000);
+};
+
+deleteEventBtn.onclick=()=>{
+  events = events.filter(e => e.date !== currentEventDate);
+  localStorage.setItem('calendarEvents', JSON.stringify(events));
+  modal.style.display='none'; 
+  renderCalendar();
+  toast.innerText = trans[currentLang].deleted;
+  toast.style.display='block';
+  setTimeout(()=>{toast.style.display='none';},2000);
+};
+
+// Notification System
+const notificationToggle = document.getElementById('notificationToggle');
+const notificationPanel = document.getElementById('notificationPanel');
+const notificationList = document.getElementById('notificationList');
+
+notificationToggle.addEventListener('click', () => {
+  notificationPanel.style.display = notificationPanel.style.display === 'block' ? 'none' : 'block';
+});
+
+// Close notification panel when clicking outside
+document.addEventListener('click', (e) => {
+  if (!notificationPanel.contains(e.target) && !notificationToggle.contains(e.target)) {
+    notificationPanel.style.display = 'none';
+  }
+});
+
+function updateNotifications() {
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+  
+  // Filter events for today and tomorrow
+  const todayEvents = events.filter(e => e.date === today);
+  const upcomingEvents = events.filter(e => {
+    const eventDate = new Date(e.date);
+    return eventDate > now && eventDate <= new Date(tomorrowStr);
+  });
+  
+  notificationList.innerHTML = '';
+  
+  if (todayEvents.length === 0 && upcomingEvents.length === 0) {
+    const noEvents = document.createElement('div');
+    noEvents.className = 'notification-item';
+    noEvents.innerText = trans[currentLang].noNotifications;
+    notificationList.appendChild(noEvents);
+    notificationToggle.classList.remove('has-notifications');
+    return;
+  }
+  
+  // Show today's events first
+  if (todayEvents.length > 0) {
+    const todayHeader = document.createElement('div');
+    todayHeader.className = 'notification-item';
+    todayHeader.style.fontWeight = 'bold';
+    todayHeader.innerText = trans[currentLang].todayEvents;
+    notificationList.appendChild(todayHeader);
+    
+    todayEvents.forEach(event => {
+      const item = document.createElement('div');
+      item.className = 'notification-item today';
+      item.innerHTML = `
+        <strong>${event.title}</strong>
+        <div class="notification-time">${event.time || 'All day'}</div>
+      `;
+      notificationList.appendChild(item);
+    });
+  }
+  
+  // Show upcoming events
+  if (upcomingEvents.length > 0) {
+    const upcomingHeader = document.createElement('div');
+    upcomingHeader.className = 'notification-item';
+    upcomingHeader.style.fontWeight = 'bold';
+    upcomingHeader.innerText = trans[currentLang].upcomingEvents;
+    notificationList.appendChild(upcomingHeader);
+    
+    upcomingEvents.forEach(event => {
+      const eventDate = new Date(event.date);
+      const options = { weekday: 'short', month: 'short', day: 'numeric' };
+      const formattedDate = eventDate.toLocaleDateString(currentLang === 'bn' ? 'bn-BD' : currentLang === 'hi' ? 'hi-IN' : 'en-US', options);
+      
+      const item = document.createElement('div');
+      item.className = 'notification-item upcoming';
+      item.innerHTML = `
+        <strong>${event.title}</strong>
+        <div class="notification-time">${formattedDate} • ${event.time || 'All day'}</div>
+      `;
+      notificationList.appendChild(item);
+    });
+  }
+  
+  // Show notification indicator
+  notificationToggle.classList.add('has-notifications');
+}
+
+function checkNotifications() {
+  const now = new Date();
+  events.forEach(event => {
+    if (event.reminder && event.reminder !== 'none' && event.date && event.time) {
+      const eventDateTime = new Date(`${event.date}T${event.time}`);
+      let reminderTime = new Date(eventDateTime);
+      
+      // Calculate reminder time based on setting
+      switch(event.reminder) {
+        case '5min':
+          reminderTime.setMinutes(reminderTime.getMinutes() - 5);
+          break;
+        case '15min':
+          reminderTime.setMinutes(reminderTime.getMinutes() - 15);
+          break;
+        case '30min':
+          reminderTime.setMinutes(reminderTime.getMinutes() - 30);
+          break;
+        case '1hour':
+          reminderTime.setHours(reminderTime.getHours() - 1);
+          break;
+        case '1day':
+          reminderTime.setDate(reminderTime.getDate() - 1);
+          break;
+      }
+      
+      // Check if it's time to show notification
+      if (Math.abs(now - reminderTime) < 60000) { // Within 1 minute
+        showNotification(event);
+      }
+    }
+  });
+}
+
+function showNotification(event) {
+  // Check if browser supports notifications
+  if (!("Notification" in window)) {
+    alert(`Reminder: ${event.title}\nDate: ${event.date} ${event.time || ''}`);
+    return;
+  }
+  
+  // Check if permission is already granted
+  if (Notification.permission === "granted") {
+    createNotification(event);
+  } 
+  // Otherwise, ask for permission
+  else if (Notification.permission !== "denied") {
+    Notification.requestPermission().then(permission => {
+      if (permission === "granted") {
+        createNotification(event);
+      } else {
+        // Fallback to alert if permission denied
+        alert(`Reminder: ${event.title}\nDate: ${event.date} ${event.time || ''}`);
+      }
+    });
+  } else {
+    // Fallback to alert if permission denied
+    alert(`Reminder: ${event.title}\nDate: ${event.date} ${event.time || ''}`);
+  }
+}
+
+function createNotification(event) {
+  const notification = new Notification("Calendar Event Reminder", {
+    body: `${event.title}\n${event.date} ${event.time || ''}`,
+    icon: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTIiIGZpbGw9IiNGRjZGNjEiLz4KPHBhdGggZD0iTTQyIDI2SDIyVjM4SDQyVjI2WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTMyIDE2TDM2IDIwTDM0IDIyTDMwIDE4TDI2IDIyTDI0IDIwTDI4IDE2SDI0VjE0SDQwVjE2SDM2WiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+Cg==",
+    tag: `event-${event.date}-${event.title}`
+  });
+  
+  notification.onclick = function() {
+    window.focus();
+    this.close();
+  };
+}
+
+// Initialize
+renderCalendar();
+
+// Force ads to load after everything is ready
+setTimeout(() => {
+  loadAdsterraAds();
+  console.log('Ad system fully initialized');
+}, 3000);
+</script>
+</body>
+</html>
